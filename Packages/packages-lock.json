@@ -118,6 +118,16 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
+    "com.unity.webrtc": {
+      "version": "2.4.0-exp.8",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.editorcoroutines": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
