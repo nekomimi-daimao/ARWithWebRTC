@@ -28,24 +28,65 @@ namespace WebRTC
                 ).Subscribe(OnReceiveMessage)
                 .AddTo(_compositeDisposable);
 
+            Observable.FromEvent<WebSocketOpenEventHandler>(
+                    h => h.Invoke,
+                    h => _webSocket.OnOpen += h,
+                    h => _webSocket.OnOpen -= h
+                )
+                .Subscribe(OnOpen).AddTo(_compositeDisposable);
+
+            Observable.FromEvent<WebSocketCloseEventHandler, WebSocketCloseCode>(
+                h => h.Invoke,
+                h => _webSocket.OnClose += h,
+                h => _webSocket.OnClose -= h
+            ).Subscribe(OnClose).AddTo(_compositeDisposable);
+
+            Observable.FromEvent<WebSocketErrorEventHandler, string>(
+                h => h.Invoke,
+                h => _webSocket.OnError += h,
+                h => _webSocket.OnError -= h
+            ).Subscribe(OnError).AddTo(_compositeDisposable);
+
             Observable.EveryUpdate()
                 .Subscribe(_ => _webSocket.DispatchMessageQueue())
                 .AddTo(_compositeDisposable);
         }
 
-        public UniTask Connect()
+        public async UniTask Connect()
         {
-            return _webSocket.Connect().AsUniTask();
+            // never return
+            _webSocket.Connect().AsUniTask().Forget();
+
+            bool IsConnecting() => _webSocket.State == WebSocketState.Connecting;
+            // *** -> Connecting
+            await UniTask.WaitUntil(IsConnecting);
+            // Connecting -> ***
+            await UniTask.WaitWhile(IsConnecting);
         }
 
         public void Dispose()
         {
+            _webSocket?.Close();
+
             _compositeDisposable?.Dispose();
             _receiveOffer?.Dispose();
             _receiveAnswer?.Dispose();
             _receiveIce?.Dispose();
+        }
 
-            _webSocket?.Close();
+        private void OnOpen(Unit _)
+        {
+            Debug.Log($"{nameof(SignalerWss)} WS {nameof(OnOpen)}");
+        }
+
+        private void OnClose(WebSocketCloseCode code)
+        {
+            Debug.Log($"{nameof(SignalerWss)} WS {nameof(OnClose)} {code}");
+        }
+
+        private void OnError(string error)
+        {
+            Debug.LogError($"{nameof(SignalerWss)} WS {nameof(OnError)} {error}");
         }
 
         #endregion
