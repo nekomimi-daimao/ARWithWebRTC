@@ -13,6 +13,8 @@ namespace WebRTC
         #region WSS
 
         private readonly WebSocket _webSocket;
+        public WebSocket WebSocket => _webSocket;
+
         private readonly CompositeDisposable _compositeDisposable = new();
 
         public SignalerWss(string url)
@@ -75,14 +77,14 @@ namespace WebRTC
                     break;
                 case (byte)MessageType.Ice:
                     s = System.Text.Encoding.UTF8.GetString(message);
-                    // _receiveOffer?.OnNext(SessionDescriptionToJson.FromJson(s).To());
+                    _receiveIce?.OnNext(IceCandidateToJson.FromJson(s).To());
                     break;
                 default:
                     return;
             }
         }
 
-        public UniTask Send(MessageType type, string json)
+        public UniTask SendMessage(MessageType type, string json)
         {
             var s = System.Text.Encoding.UTF8.GetBytes(json);
             Array.Resize(ref s, s.Length + 1);
@@ -97,18 +99,19 @@ namespace WebRTC
         public UniTask SendOffer(RTCSessionDescription description)
         {
             Debug.Log($"{nameof(SignalerWss)} {nameof(SendOffer)} {description}");
-            return Send(MessageType.Offer, description.From().ToJson());
+            return SendMessage(MessageType.Offer, description.From().ToJson());
         }
 
         public UniTask SendAnswer(RTCSessionDescription description)
         {
             Debug.Log($"{nameof(SignalerWss)} {nameof(SendAnswer)} {description}");
-            return Send(MessageType.Answer, description.From().ToJson());
+            return SendMessage(MessageType.Answer, description.From().ToJson());
         }
 
-        public async UniTask SendIce(RTCIceCandidate candidate)
+        public UniTask SendIce(RTCIceCandidate candidate)
         {
             Debug.Log($"{nameof(SignalerWss)} {nameof(SendIce)} {candidate}");
+            return SendMessage(MessageType.Ice, candidate.From().ToJson());
         }
 
         private readonly Subject<RTCSessionDescription> _receiveOffer = new();

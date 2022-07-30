@@ -24,6 +24,7 @@ namespace WebRTC
             PeerConnection = new RTCPeerConnection(ref Config);
 
             SubscribeCallbacks();
+            SubscribeReceive();
 
             foreach (var streamTrack in track)
             {
@@ -105,13 +106,13 @@ namespace WebRTC
         private void SubscribeReceive()
         {
             _signaler.ReceiveOffer.Subscribe(ReceiveOffer).AddTo(_compositeDisposable);
-            _signaler.ReceiveAnswer.Subscribe((ReceiveAnswer)).AddTo(_compositeDisposable);
+            _signaler.ReceiveAnswer.Subscribe(ReceiveAnswer).AddTo(_compositeDisposable);
             _signaler.ReceiveIce.Subscribe(ReceiveIce).AddTo(_compositeDisposable);
         }
 
-        private void ReceiveIce(RTCIceCandidate desc)
+        private void ReceiveOffer(RTCSessionDescription desc)
         {
-            throw new NotImplementedException();
+            CreateAnswer(desc).Forget();
         }
 
         private async void ReceiveAnswer(RTCSessionDescription desc)
@@ -124,9 +125,13 @@ namespace WebRTC
             }
         }
 
-        private void ReceiveOffer(RTCSessionDescription desc)
+        private void ReceiveIce(RTCIceCandidate iceCandidate)
         {
-            CreateAnswer(desc).Forget();
+            var candidate = PeerConnection.AddIceCandidate(iceCandidate);
+            if (!candidate)
+            {
+                Debug.LogError($"{nameof(PeerController)} {nameof(ReceiveIce)} add ice failed");
+            }
         }
 
         #endregion
@@ -187,6 +192,7 @@ namespace WebRTC
         private void OnIceCandidate(RTCIceCandidate iceCandidate)
         {
             Debug.Log($"{nameof(PeerController)} {nameof(OnIceCandidate)} {iceCandidate.Candidate}");
+            _signaler.SendIce(iceCandidate).Forget();
         }
 
         private void OnDataChannel(RTCDataChannel channel)
