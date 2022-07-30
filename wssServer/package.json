@@ -1,0 +1,18 @@
+{
+  "name": "wssserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "ip": "^1.1.8",
+    "ws": "^8.8.1"
+  }
+}
