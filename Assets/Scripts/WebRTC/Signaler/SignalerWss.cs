@@ -5,10 +5,9 @@ using UniRx;
 using Unity.WebRTC;
 using UnityEngine;
 
-namespace WebRTC
+namespace WebRTC.Signaler
 {
     public class SignalerWss : ISignaler, IDisposable
-
     {
         #region WSS
 

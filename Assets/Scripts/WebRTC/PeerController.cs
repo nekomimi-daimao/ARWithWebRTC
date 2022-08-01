@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UniRx;
 using Unity.WebRTC;
 using UnityEngine;
+using WebRTC.Signaler;
 
 namespace WebRTC
 {
@@ -15,11 +16,13 @@ namespace WebRTC
 
         public RTCPeerConnection PeerConnection { get; }
 
+        private readonly bool _offerSender;
         private readonly ISignaler _signaler;
         private readonly CompositeDisposable _compositeDisposable = new();
 
-        public PeerController(ISignaler signaler, MediaStreamTrack[] track, string[] channel)
+        public PeerController(bool offerSender, ISignaler signaler, MediaStreamTrack[] track, string[] channel)
         {
+            _offerSender = offerSender;
             _signaler = signaler;
             PeerConnection = new RTCPeerConnection(ref Config);
 
@@ -186,7 +189,10 @@ namespace WebRTC
         private void OnNegotiationNeeded(Unit _)
         {
             Debug.Log($"{nameof(PeerController)} {nameof(OnNegotiationNeeded)}");
-            CreateOffer().Forget();
+            if (_offerSender)
+            {
+                CreateOffer().Forget();
+            }
         }
 
         private void OnIceCandidate(RTCIceCandidate iceCandidate)

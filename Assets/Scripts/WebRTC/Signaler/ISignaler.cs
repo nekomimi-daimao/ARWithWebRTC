@@ -2,7 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using Unity.WebRTC;
 
-namespace WebRTC
+namespace WebRTC.Signaler
 {
     public interface ISignaler
     {
