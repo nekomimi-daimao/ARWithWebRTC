@@ -6,21 +6,21 @@ using UnityEngine.XR.ARFoundation;
 
 namespace AR
 {
-    public static class StateChecker
+    public static class Preparator
     {
         public static async UniTask<bool> Check()
         {
             var permission = await CheckAllowed();
             if (!permission)
             {
-                Debug.LogError($"{nameof(StateChecker)} {nameof(Check)} no cameras are allowed");
+                Debug.LogError($"{nameof(Preparator)} {nameof(Check)} no cameras are allowed");
                 return false;
             }
 
             var ar = await CheckAR();
             if (!ar)
             {
-                Debug.LogError($"{nameof(StateChecker)} {nameof(Check)} cannot launch ARFouncation");
+                Debug.LogError($"{nameof(Preparator)} {nameof(Check)} cannot launch ARFouncation");
                 return false;
             }
 

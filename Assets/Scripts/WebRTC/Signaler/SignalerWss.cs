@@ -14,6 +14,8 @@ namespace WebRTC.Signaler
         private readonly WebSocket _webSocket;
         public WebSocket WebSocket => _webSocket;
 
+        public bool IsConnected => _webSocket.State == WebSocketState.Open;
+
         private readonly CompositeDisposable _compositeDisposable = new();
 
         public SignalerWss(string url)
