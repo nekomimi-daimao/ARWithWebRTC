@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using AR;
 using Cysharp.Threading.Tasks;
 using UniRx;
 using UniRx.Triggers;
@@ -12,7 +13,7 @@ using UnityEngine.XR.ARFoundation;
 using WebRTC;
 using WebRTC.Signaler;
 
-namespace AR
+namespace Scene
 {
     public sealed class ARSceneManager : MonoBehaviour
     {
