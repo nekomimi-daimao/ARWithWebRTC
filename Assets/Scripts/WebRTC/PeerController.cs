@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UniRx;
 using Unity.WebRTC;
 using UnityEngine;
+using WebRTC.Extension;
 using WebRTC.Signaler;
 
 namespace WebRTC
@@ -150,47 +151,26 @@ namespace WebRTC
 
         private void SubscribeCallbacks()
         {
-            Observable.FromEvent<DelegateOnNegotiationNeeded>(
-                h => h.Invoke,
-                h => PeerConnection.OnNegotiationNeeded += h,
-                h => PeerConnection.OnNegotiationNeeded -= h
-            ).Subscribe(OnNegotiationNeeded).AddTo(_compositeDisposable);
+            PeerConnection.OnNegotiationNeededAsObservable()
+                .Subscribe(OnNegotiationNeeded).AddTo(_compositeDisposable);
 
-            Observable.FromEvent<DelegateOnIceCandidate, RTCIceCandidate>(
-                h => h.Invoke,
-                h => PeerConnection.OnIceCandidate += h,
-                h => PeerConnection.OnIceCandidate -= h
-            ).Subscribe(OnIceCandidate).AddTo(_compositeDisposable);
+            PeerConnection.OnIceCandidateAsObservable()
+                .Subscribe(OnIceCandidate).AddTo(_compositeDisposable);
 
-            Observable.FromEvent<DelegateOnDataChannel, RTCDataChannel>(
-                h => h.Invoke,
-                h => PeerConnection.OnDataChannel += h,
-                h => PeerConnection.OnDataChannel -= h
-            ).Subscribe(OnDataChannel).AddTo(_compositeDisposable);
+            PeerConnection.OnDataChannelAsObservable()
+                .Subscribe(OnDataChannel).AddTo(_compositeDisposable);
 
-            Observable.FromEvent<DelegateOnTrack, RTCTrackEvent>(
-                h => h.Invoke,
-                h => PeerConnection.OnTrack += h,
-                h => PeerConnection.OnTrack -= h
-            ).Subscribe(OnTrack).AddTo(_compositeDisposable);
+            PeerConnection.OnTrackAsObservable()
+                .Subscribe(OnTrack).AddTo(_compositeDisposable);
 
-            Observable.FromEvent<DelegateOnConnectionStateChange, RTCPeerConnectionState>(
-                h => h.Invoke,
-                h => PeerConnection.OnConnectionStateChange += h,
-                h => PeerConnection.OnConnectionStateChange -= h
-            ).Subscribe(OnConnectionStateChange).AddTo(_compositeDisposable);
+            PeerConnection.OnConnectionStateChangeAsObservable()
+                .Subscribe(OnConnectionStateChange).AddTo(_compositeDisposable);
 
-            Observable.FromEvent<DelegateOnIceConnectionChange, RTCIceConnectionState>(
-                h => h.Invoke,
-                h => PeerConnection.OnIceConnectionChange += h,
-                h => PeerConnection.OnIceConnectionChange -= h
-            ).Subscribe(OnIceConnectionChange).AddTo(_compositeDisposable);
+            PeerConnection.OnIceConnectionChangeAsObservable()
+                .Subscribe(OnIceConnectionChange).AddTo(_compositeDisposable);
 
-            Observable.FromEvent<DelegateOnIceGatheringStateChange, RTCIceGatheringState>(
-                h => h.Invoke,
-                h => PeerConnection.OnIceGatheringStateChange += h,
-                h => PeerConnection.OnIceGatheringStateChange -= h
-            ).Subscribe(OnIceGatheringStateChange).AddTo(_compositeDisposable);
+            PeerConnection.OnIceGatheringStateChangeAsObservable()
+                .Subscribe(OnIceGatheringStateChange).AddTo(_compositeDisposable);
         }
 
         private void OnNegotiationNeeded(Unit _)
