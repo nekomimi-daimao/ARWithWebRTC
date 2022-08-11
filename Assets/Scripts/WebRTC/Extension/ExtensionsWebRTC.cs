@@ -1,6 +1,7 @@
 using System;
 using UniRx;
 using Unity.WebRTC;
+using UnityEngine;
 
 namespace WebRTC.Extension
 {
@@ -83,6 +84,18 @@ namespace WebRTC.Extension
                 h => h.Invoke,
                 h => mediaStream.OnRemoveTrack += h,
                 h => mediaStream.OnRemoveTrack -= h
+            );
+        }
+    }
+
+    public static class ExtensionVideoStreamTrack
+    {
+        public static IObservable<Texture> OnVideoReceivedAsObservable(this VideoStreamTrack track)
+        {
+            return Observable.FromEvent<OnVideoReceived, Texture>(
+                h => h.Invoke,
+                h => track.OnVideoReceived += h,
+                h => track.OnVideoReceived -= h
             );
         }
     }

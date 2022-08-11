@@ -19,6 +19,11 @@ namespace Scene
     {
         private readonly CompositeDisposable _compositeDisposable = new CompositeDisposable();
 
+        private void Awake()
+        {
+            Unity.WebRTC.WebRTC.Initialize();
+        }
+
         private void Start()
         {
             this.OnDestroyAsObservable()

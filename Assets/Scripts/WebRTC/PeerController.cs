@@ -19,6 +19,7 @@ namespace WebRTC
         private readonly bool _offerSender;
         private readonly ISignaler _signaler;
         private readonly CompositeDisposable _compositeDisposable = new();
+        public MediaStream ReceiveMediaStream { get; } = new();
 
         public PeerController(bool offerSender, ISignaler signaler, MediaStreamTrack[] track, string[] channel)
         {
@@ -29,10 +30,7 @@ namespace WebRTC
             SubscribeCallbacks();
             SubscribeReceive();
 
-            foreach (var streamTrack in track)
-            {
-                PeerConnection.AddTrack(streamTrack);
-            }
+            AddTrack(track);
 
             foreach (var c in channel)
             {
@@ -102,6 +100,14 @@ namespace WebRTC
             _signaler.SendAnswer(answerDesc).Forget();
         }
 
+        private void AddTrack(MediaStreamTrack[] track)
+        {
+            foreach (var streamTrack in track)
+            {
+                PeerConnection.AddTrack(streamTrack);
+            }
+        }
+
         #endregion
 
         #region Receive
@@ -111,6 +117,7 @@ namespace WebRTC
             _signaler.ReceiveOffer.Subscribe(ReceiveOffer).AddTo(_compositeDisposable);
             _signaler.ReceiveAnswer.Subscribe(ReceiveAnswer).AddTo(_compositeDisposable);
             _signaler.ReceiveIce.Subscribe(ReceiveIce).AddTo(_compositeDisposable);
+            ReceiveMediaStream.AddTo(_compositeDisposable);
         }
 
         private void ReceiveOffer(RTCSessionDescription desc)
@@ -209,6 +216,7 @@ namespace WebRTC
         private void OnTrack(RTCTrackEvent trackEvent)
         {
             Debug.Log($"{nameof(PeerController)} {nameof(OnTrack)} {trackEvent}");
+            ReceiveMediaStream.AddTrack(trackEvent.Track);
         }
 
         private void OnConnectionStateChange(RTCPeerConnectionState state)
