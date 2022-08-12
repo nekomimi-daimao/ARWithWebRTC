@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using AR;
@@ -107,13 +109,7 @@ namespace Scene
 
         [Header("AR")]
         [SerializeField]
-        private ARSessionOrigin sessionOrigin;
-
-        [SerializeField]
-        private ARCameraManager arCameraManager;
-
-        [SerializeField]
-        private ARCameraBackground arCameraBackground;
+        private Camera renderingCamera;
 
         private async UniTask Init(CancellationToken token)
         {
@@ -147,24 +143,7 @@ namespace Scene
                 return;
             }
 
-            var cs = sessionOrigin.camera.CaptureStream(Screen.width, Screen.height, 1000000);
-            var rt = sessionOrigin.camera.targetTexture;
-            sessionOrigin.camera.targetTexture = null;
-            Observable.FromEvent<ARCameraFrameEventArgs>(
-                h => arCameraManager.frameReceived += h,
-                h => arCameraManager.frameReceived -= h
-            ).Subscribe(args =>
-            {
-                foreach (var argsTexture in args.textures)
-                {
-#if UNITY_ANDROID
-                    Graphics.Blit(argsTexture, rt, arCameraBackground.material);
-#elif UNITY_IOS
-                    Graphics.Blit(argsTexture, rt);
-#endif
-                }
-            }).AddTo(_compositeDisposable);
-
+            var cs = renderingCamera.CaptureStream(Screen.width, Screen.height, 1000000);
             _peer = new PeerController(true, _signaler, new[] { cs, }, Array.Empty<string>());
             this.OnDestroyAsObservable()
                 .Subscribe(_ => { Disconnect(); });
