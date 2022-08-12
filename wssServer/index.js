@@ -1,4 +1,4 @@
-import {WebSocketServer} from "ws";
+import {WebSocketServer, WebSocket} from "ws";
 import ip from "ip";
 
 const port = 5555;
@@ -19,6 +19,8 @@ server.on('connection', function connection(ws, req) {
         server.clients.forEach(function each(client) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(data, {binary: isBinary});
+            } else if (client === ws) {
+                console.log(`message from ${client._socket.remoteAddress}`);
             }
         });
     });
