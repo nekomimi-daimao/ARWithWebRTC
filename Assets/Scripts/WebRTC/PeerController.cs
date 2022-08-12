@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UniRx;
 using Unity.WebRTC;
@@ -19,10 +21,11 @@ namespace WebRTC
 
         private readonly bool _offerSender;
         private readonly ISignaler _signaler;
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly CompositeDisposable _compositeDisposable = new();
         public MediaStream ReceiveMediaStream { get; } = new();
 
-        public PeerController(bool offerSender, ISignaler signaler, MediaStreamTrack[] track, string[] channel)
+        public PeerController(bool offerSender, ISignaler signaler, MediaStream[] trackStreams, string[] channel)
         {
             _offerSender = offerSender;
             _signaler = signaler;
@@ -30,8 +33,10 @@ namespace WebRTC
 
             SubscribeCallbacks();
             SubscribeReceive();
+            AddCandidateQueue(_cancellationTokenSource.Token).Forget();
+            _cancellationTokenSource.AddTo(_compositeDisposable);
 
-            AddTrack(track);
+            AddTrack(trackStreams);
 
             foreach (var c in channel)
             {
@@ -42,6 +47,8 @@ namespace WebRTC
         public void Dispose()
         {
             _compositeDisposable?.Dispose();
+            _iceCandidatesQueue?.CompleteAdding();
+            _iceCandidatesQueue?.Dispose();
             PeerConnection?.Close();
             PeerConnection?.Dispose();
         }
@@ -101,11 +108,14 @@ namespace WebRTC
             _signaler.SendAnswer(answerDesc).Forget();
         }
 
-        private void AddTrack(MediaStreamTrack[] track)
+        private void AddTrack(MediaStream[] trackStreams)
         {
-            foreach (var streamTrack in track)
+            foreach (var s in trackStreams)
             {
-                PeerConnection.AddTrack(streamTrack);
+                foreach (var mediaStreamTrack in s.GetTracks())
+                {
+                    PeerConnection.AddTrack(mediaStreamTrack, s);
+                }
             }
         }
 
@@ -117,7 +127,9 @@ namespace WebRTC
         {
             _signaler.ReceiveOffer.Subscribe(ReceiveOffer).AddTo(_compositeDisposable);
             _signaler.ReceiveAnswer.Subscribe(ReceiveAnswer).AddTo(_compositeDisposable);
-            _signaler.ReceiveIce.Subscribe(ReceiveIce).AddTo(_compositeDisposable);
+            _signaler.ReceiveIce
+                .Throttle(TimeSpan.FromSeconds(1))
+                .Subscribe(ReceiveIce).AddTo(_compositeDisposable);
             ReceiveMediaStream.AddTo(_compositeDisposable);
         }
 
@@ -138,10 +150,38 @@ namespace WebRTC
 
         private void ReceiveIce(RTCIceCandidate iceCandidate)
         {
-            var candidate = PeerConnection.AddIceCandidate(iceCandidate);
-            if (!candidate)
+            _iceCandidatesQueue.Add(iceCandidate);
+        }
+
+        private readonly BlockingCollection<RTCIceCandidate> _iceCandidatesQueue = new BlockingCollection<RTCIceCandidate>();
+
+        private async UniTaskVoid AddCandidateQueue(CancellationToken token)
+        {
+            while (true)
             {
-                Debug.LogError($"{nameof(PeerController)} {nameof(ReceiveIce)} add ice failed");
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                try
+                {
+                    await UniTask.SwitchToThreadPool();
+                    var candidate = _iceCandidatesQueue.Take(token);
+                    var addResult = PeerConnection.AddIceCandidate(candidate);
+                    if (!addResult)
+                    {
+                        Debug.LogError($"{nameof(PeerController)} {nameof(ReceiveIce)} add ice failed");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    if (e is ObjectDisposedException || e is OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
             }
         }
 

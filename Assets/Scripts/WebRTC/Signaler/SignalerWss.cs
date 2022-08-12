@@ -105,20 +105,16 @@ namespace WebRTC.Signaler
         {
             var t = message[message.Length - 1];
             Array.Resize(ref message, message.Length - 1);
-            string s;
-
+            var s = System.Text.Encoding.UTF8.GetString(message);
             switch (t)
             {
                 case (byte)MessageType.Offer:
-                    s = System.Text.Encoding.UTF8.GetString(message);
                     _receiveOffer?.OnNext(SessionDescriptionToJson.FromJson(s).To());
                     break;
                 case (byte)MessageType.Answer:
-                    s = System.Text.Encoding.UTF8.GetString(message);
                     _receiveAnswer?.OnNext(SessionDescriptionToJson.FromJson(s).To());
                     break;
                 case (byte)MessageType.Ice:
-                    s = System.Text.Encoding.UTF8.GetString(message);
                     _receiveIce?.OnNext(IceCandidateToJson.FromJson(s).To());
                     break;
                 default:

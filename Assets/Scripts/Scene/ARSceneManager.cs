@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using AR;
@@ -22,6 +21,7 @@ namespace Scene
         private void Awake()
         {
             Unity.WebRTC.WebRTC.Initialize();
+            StartCoroutine(Unity.WebRTC.WebRTC.Update());
         }
 
         private void Start()
@@ -130,7 +130,7 @@ namespace Scene
 
         private async UniTask CreatePeerAsync(string url)
         {
-            DisConnect();
+            Disconnect();
 
             _signaler = new SignalerWss(url);
             await _signaler.Connect();
@@ -140,12 +140,12 @@ namespace Scene
             }
 
             var cs = sessionOrigin.camera.CaptureStream(Screen.width, Screen.height, 1000000);
-            _peer = new PeerController(true, _signaler, cs.GetTracks().ToArray(), Array.Empty<string>());
+            _peer = new PeerController(true, _signaler, new[] { cs, }, Array.Empty<string>());
             this.OnDestroyAsObservable()
-                .Subscribe(_ => { DisConnect(); });
+                .Subscribe(_ => { Disconnect(); });
         }
 
-        private void DisConnect()
+        private void Disconnect()
         {
             _signaler?.Dispose();
             _peer?.Dispose();

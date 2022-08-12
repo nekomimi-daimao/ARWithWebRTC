@@ -19,6 +19,7 @@ namespace Scene
         private void Awake()
         {
             Unity.WebRTC.WebRTC.Initialize();
+            StartCoroutine(Unity.WebRTC.WebRTC.Update());
         }
 
         private void Start()
@@ -116,7 +117,7 @@ namespace Scene
             _peer = new PeerController(
                 false,
                 _signaler,
-                Array.Empty<MediaStreamTrack>(),
+                Array.Empty<MediaStream>(),
                 Array.Empty<string>()
             );
 
