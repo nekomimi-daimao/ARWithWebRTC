@@ -3,9 +3,13 @@ using UniRx;
 using Unity.WebRTC;
 using UnityEngine;
 
+// ReSharper disable InconsistentNaming
+
 namespace WebRTC.Extension
 {
-    // ReSharper disable once InconsistentNaming
+    /// <summary>
+    /// <see cref="RTCPeerConnection"/>
+    /// </summary>
     public static class ExtensionRTCPeerConnection
     {
         public static IObservable<Unit> OnNegotiationNeededAsObservable(this RTCPeerConnection peerConnection)
@@ -67,6 +71,42 @@ namespace WebRTC.Extension
         }
     }
 
+    /// <summary>
+    /// <see cref="RTCDataChannel"/>
+    /// </summary>
+    public static class ExtensionRTCDataChannel
+    {
+        public static IObservable<Unit> OnOpenAsObservable(this RTCDataChannel dataChannel)
+        {
+            return Observable.FromEvent<DelegateOnOpen>(
+                h => h.Invoke,
+                h => dataChannel.OnOpen += h,
+                h => dataChannel.OnOpen += h
+            );
+        }
+
+        public static IObservable<Unit> OnCloseAsObservable(this RTCDataChannel dataChannel)
+        {
+            return Observable.FromEvent<DelegateOnClose>(
+                h => h.Invoke,
+                h => dataChannel.OnClose += h,
+                h => dataChannel.OnClose += h
+            );
+        }
+
+        public static IObservable<byte[]> OnMessageAsObservable(this RTCDataChannel dataChannel)
+        {
+            return Observable.FromEvent<DelegateOnMessage, byte[]>(
+                h => h.Invoke,
+                h => dataChannel.OnMessage += h,
+                h => dataChannel.OnMessage += h
+            );
+        }
+    }
+
+    /// <summary>
+    /// <see cref="MediaStream"/>
+    /// </summary>
     public static class ExtensionMediaStream
     {
         public static IObservable<MediaStreamTrackEvent> OnAddTrackAsObservable(this MediaStream mediaStream)
@@ -88,6 +128,9 @@ namespace WebRTC.Extension
         }
     }
 
+    /// <summary>
+    /// <see cref="VideoStreamTrack"/>
+    /// </summary>
     public static class ExtensionVideoStreamTrack
     {
         public static IObservable<Texture> OnVideoReceivedAsObservable(this VideoStreamTrack track)
