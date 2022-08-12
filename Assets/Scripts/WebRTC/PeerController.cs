@@ -176,11 +176,12 @@ namespace WebRTC
                 }
                 catch (Exception e)
                 {
-                    Debug.LogException(e);
-                    if (e is ObjectDisposedException || e is OperationCanceledException)
+                    if (e is ObjectDisposedException || e is OperationCanceledException || e is InvalidOperationException)
                     {
                         break;
                     }
+
+                    Debug.LogException(e);
                 }
             }
         }

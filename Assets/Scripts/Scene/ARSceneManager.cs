@@ -36,6 +36,7 @@ namespace Scene
 
         #region UI
 
+        [Header("UI")]
         [SerializeField]
         private InputField inputAddress;
 
@@ -104,8 +105,15 @@ namespace Scene
 
         #region AR
 
+        [Header("AR")]
         [SerializeField]
         private ARSessionOrigin sessionOrigin;
+
+        [SerializeField]
+        private ARCameraManager arCameraManager;
+
+        [SerializeField]
+        private ARCameraBackground arCameraBackground;
 
         private async UniTask Init(CancellationToken token)
         {
@@ -140,6 +148,23 @@ namespace Scene
             }
 
             var cs = sessionOrigin.camera.CaptureStream(Screen.width, Screen.height, 1000000);
+            var rt = sessionOrigin.camera.targetTexture;
+            sessionOrigin.camera.targetTexture = null;
+            Observable.FromEvent<ARCameraFrameEventArgs>(
+                h => arCameraManager.frameReceived += h,
+                h => arCameraManager.frameReceived -= h
+            ).Subscribe(args =>
+            {
+                foreach (var argsTexture in args.textures)
+                {
+#if UNITY_ANDROID
+                    Graphics.Blit(argsTexture, rt, arCameraBackground.material);
+#elif UNITY_IOS
+                    Graphics.Blit(argsTexture, rt);
+#endif
+                }
+            }).AddTo(_compositeDisposable);
+
             _peer = new PeerController(true, _signaler, new[] { cs, }, Array.Empty<string>());
             this.OnDestroyAsObservable()
                 .Subscribe(_ => { Disconnect(); });
