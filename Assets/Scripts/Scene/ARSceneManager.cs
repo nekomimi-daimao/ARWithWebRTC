@@ -109,7 +109,19 @@ namespace Scene
 
         [Header("AR")]
         [SerializeField]
+        private ARSessionOrigin arSessionOrigin;
+
+        [SerializeField]
+        private ARCameraManager arCameraManager;
+
+        [SerializeField]
+        private ARCameraBackground arCameraBackground;
+
+        [SerializeField]
         private Camera renderingCamera;
+
+        [SerializeField]
+        private RawImage renderingBackground;
 
         private async UniTask Init(CancellationToken token)
         {
@@ -145,8 +157,30 @@ namespace Scene
 
             var cs = renderingCamera.CaptureStream(Screen.width, Screen.height, 1000000);
             _peer = new PeerController(true, _signaler, new[] { cs, }, Array.Empty<string>());
+
+            var renderingTexture = new RenderTexture(renderingCamera.targetTexture);
+            renderingBackground.texture = renderingTexture;
+            Observable.FromEvent<ARCameraFrameEventArgs>(
+                h => arCameraManager.frameReceived += h,
+                h => arCameraManager.frameReceived -= h
+            ).Subscribe(args =>
+            {
+                foreach (var argsTexture in args.textures)
+                {
+#if UNITY_ANDROID
+                    Graphics.Blit(argsTexture, renderingTexture, arCameraBackground.material);
+#elif UNITY_IOS
+                    Graphics.Blit(argsTexture, renderingTexture);
+#endif
+                }
+            }).AddTo(_compositeDisposable);
+
             this.OnDestroyAsObservable()
-                .Subscribe(_ => { Disconnect(); });
+                .Subscribe(_ =>
+                {
+                    Disconnect();
+                    renderingTexture.Release();
+                });
         }
 
         private void Disconnect()
