@@ -35,19 +35,25 @@ namespace WebRTC
             SubscribeCallbacks();
             SubscribeReceive();
             AddCandidateQueue(_cancellationTokenSource.Token).Forget();
-            DataChannels.ObserveRemove().Subscribe(e =>
-            {
-                e.Value.Close();
-                e.Value.Dispose();
-            }).AddTo(_compositeDisposable);
+            DataChannels.ObserveRemove()
+                .Subscribe(e =>
+                {
+                    e.Value.Close();
+                    e.Value.Dispose();
+                }).AddTo(_compositeDisposable);
             DataChannels.AddTo(_compositeDisposable);
             _cancellationTokenSource.AddTo(_compositeDisposable);
 
             AddTrack(trackStreams);
 
+            var dataChannelInit = new RTCDataChannelInit();
             foreach (var c in channel)
             {
-                PeerConnection.CreateDataChannel(c);
+                var createdChannel = PeerConnection.CreateDataChannel(c, dataChannelInit);
+                createdChannel.OnOpenAsObservable()
+                    .Subscribe(_ =>
+                        DataChannels[c] = createdChannel)
+                    .AddTo(_compositeDisposable);
             }
         }
 
@@ -238,7 +244,7 @@ namespace WebRTC
 
         private void OnDataChannel(RTCDataChannel channel)
         {
-            Debug.Log($"{nameof(PeerController)} {nameof(OnDataChannel)} {channel}");
+            Debug.Log($"{nameof(PeerController)} {nameof(OnDataChannel)} {channel.Label}");
             DataChannels[channel.Label] = channel;
             channel.OnCloseAsObservable().Subscribe(_ => { DataChannels.Remove(channel.Label); });
         }

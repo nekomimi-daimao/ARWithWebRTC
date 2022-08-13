@@ -5,6 +5,7 @@ using UniRx;
 using UniRx.Triggers;
 using Unity.WebRTC;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using WebRTC;
 using WebRTC.Extension;
@@ -95,6 +96,46 @@ namespace Scene
 
         #endregion
 
+        #region DataChannel
+
+        private ShareTapPoint _shareTapPoint;
+
+        private void ChannelCreated(RTCDataChannel channel)
+        {
+            _shareTapPoint = new ShareTapPoint(channel);
+            receiveImage.OnPointerClickAsObservable()
+                .Subscribe(OnTap)
+                .AddTo(_compositeDisposable);
+
+            _shareTapPoint.OnScreenSize
+                .Subscribe(OnReceiveScreenSize)
+                .AddTo(_compositeDisposable);
+        }
+
+        private void OnTap(PointerEventData data)
+        {
+            var point = receiveImage.rectTransform.InverseTransformPoint(data.position);
+            _shareTapPoint.SendMessage(ShareTapPoint.MessageType.TapPoint, (short)point.x, (short)point.y);
+        }
+
+        private void OnReceiveScreenSize((short, short) msg)
+        {
+            var (w, h) = msg;
+            var sizeDelta = receiveImage.rectTransform.sizeDelta;
+            var ratio = (float)h / w;
+            Debug.Log(ratio);
+            var fixedH = sizeDelta.x * ratio;
+            if (Mathf.Approximately(sizeDelta.y, fixedH))
+            {
+                return;
+            }
+
+            sizeDelta.y = fixedH;
+            receiveImage.rectTransform.sizeDelta = sizeDelta;
+        }
+
+        #endregion
+
         #region WebRTC
 
         [SerializeField]
@@ -118,8 +159,15 @@ namespace Scene
                 false,
                 _signaler,
                 Array.Empty<MediaStream>(),
-                new[] { ShareTapPoint.ChannelName }
+                Array.Empty<string>()
             );
+
+            _peer.DataChannels
+                .ObserveAdd()
+                .Where(e => string.Equals(e.Key, ShareTapPoint.ChannelName))
+                .Select(e => e.Value)
+                .Subscribe(ChannelCreated)
+                .AddTo(_compositeDisposable);
 
             _peer.ReceiveMediaStream.OnAddTrackAsObservable()
                 .Subscribe(e =>

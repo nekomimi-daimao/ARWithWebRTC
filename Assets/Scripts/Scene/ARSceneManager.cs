@@ -103,6 +103,53 @@ namespace Scene
 
         #endregion
 
+        #region DataChannel
+
+        private ShareTapPoint _shareTapPoint;
+
+        private void ChannelCreated(RTCDataChannel channel)
+        {
+            _shareTapPoint = new ShareTapPoint(channel);
+            var width = Screen.width;
+            var height = Screen.height;
+            var span = TimeSpan.FromSeconds(1);
+            Observable.Interval(span)
+                .Subscribe(_ =>
+                {
+                    _shareTapPoint.SendMessage(
+                        ShareTapPoint.MessageType.ScreenSize,
+                        (short)width, (short)height
+                    );
+                })
+                .AddTo(_compositeDisposable);
+
+            _shareTapPoint.OnTap
+                .Subscribe(tuple => OnReceiveTap(tuple).Forget())
+                .AddTo(_compositeDisposable);
+        }
+
+        private async UniTaskVoid OnReceiveTap((short, short) msg)
+        {
+            await UniTask.SwitchToMainThread();
+            var (w, h) = msg;
+            var screenToWorldPoint = arSessionOrigin.camera.ScreenToWorldPoint(new Vector3(w, h, 1f));
+            var forward = arSessionOrigin.camera.transform.forward;
+            forward.y = 0;
+            forward = forward.normalized;
+            var c = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
+            c.localScale = Vector3.one * 0.2f;
+            c.position = screenToWorldPoint + forward;
+            var rigid = c.gameObject.AddComponent<Rigidbody>();
+            rigid.mass = 0.2f;
+            rigid.velocity = forward + Vector3.up;
+
+            await UniTask.Delay(TimeSpan.FromSeconds(10));
+
+            Destroy(c.gameObject);
+        }
+
+        #endregion
+
         #region AR
 
         [Header("AR")]
@@ -160,6 +207,13 @@ namespace Scene
                 new[] { cs, },
                 new[] { ShareTapPoint.ChannelName }
             );
+
+            _peer.DataChannels
+                .ObserveAdd()
+                .Where(e => string.Equals(e.Key, ShareTapPoint.ChannelName))
+                .Select(e => e.Value)
+                .Subscribe(ChannelCreated)
+                .AddTo(_compositeDisposable);
 
             var renderingTexture = new RenderTexture(renderingCamera.targetTexture);
             renderingBackground.texture = renderingTexture;
