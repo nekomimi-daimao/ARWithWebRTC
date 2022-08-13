@@ -24,6 +24,7 @@ namespace WebRTC
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly CompositeDisposable _compositeDisposable = new();
         public MediaStream ReceiveMediaStream { get; } = new();
+        public ReactiveDictionary<string, RTCDataChannel> DataChannels { get; } = new();
 
         public PeerController(bool offerSender, ISignaler signaler, MediaStream[] trackStreams, string[] channel)
         {
@@ -34,6 +35,12 @@ namespace WebRTC
             SubscribeCallbacks();
             SubscribeReceive();
             AddCandidateQueue(_cancellationTokenSource.Token).Forget();
+            DataChannels.ObserveRemove().Subscribe(e =>
+            {
+                e.Value.Close();
+                e.Value.Dispose();
+            }).AddTo(_compositeDisposable);
+            DataChannels.AddTo(_compositeDisposable);
             _cancellationTokenSource.AddTo(_compositeDisposable);
 
             AddTrack(trackStreams);
@@ -232,6 +239,8 @@ namespace WebRTC
         private void OnDataChannel(RTCDataChannel channel)
         {
             Debug.Log($"{nameof(PeerController)} {nameof(OnDataChannel)} {channel}");
+            DataChannels[channel.Label] = channel;
+            channel.OnCloseAsObservable().Subscribe(_ => { DataChannels.Remove(channel.Label); });
         }
 
         private void OnTrack(RTCTrackEvent trackEvent)

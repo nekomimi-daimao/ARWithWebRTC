@@ -118,7 +118,7 @@ namespace Scene
                 false,
                 _signaler,
                 Array.Empty<MediaStream>(),
-                Array.Empty<string>()
+                new[] { ShareTapPoint.ChannelName }
             );
 
             _peer.ReceiveMediaStream.OnAddTrackAsObservable()

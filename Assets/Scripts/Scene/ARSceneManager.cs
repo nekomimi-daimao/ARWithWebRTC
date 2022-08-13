@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using AR;
@@ -156,7 +154,12 @@ namespace Scene
             }
 
             var cs = renderingCamera.CaptureStream(Screen.width, Screen.height, 1000000);
-            _peer = new PeerController(true, _signaler, new[] { cs, }, Array.Empty<string>());
+            _peer = new PeerController(
+                true,
+                _signaler,
+                new[] { cs, },
+                new[] { ShareTapPoint.ChannelName }
+            );
 
             var renderingTexture = new RenderTexture(renderingCamera.targetTexture);
             renderingBackground.texture = renderingTexture;
