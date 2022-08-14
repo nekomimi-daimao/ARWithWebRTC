@@ -53,7 +53,10 @@ namespace AR
 #elif UNITY_EDITOR
             return true;
 #endif
+
+#pragma warning disable CS0162
             return false;
+#pragma warning restore CS0162
         }
 
         #endregion
