@@ -132,16 +132,21 @@ namespace Scene
         {
             await UniTask.SwitchToMainThread();
             var (w, h) = msg;
-            var screenToWorldPoint = arSessionOrigin.camera.ScreenToWorldPoint(new Vector3(w, h, 1f));
-            var forward = arSessionOrigin.camera.transform.forward;
+            var screenToWorldPoint = arSessionOrigin.camera.ScreenToWorldPoint(
+                new Vector3(
+                    (w / 100f) * Screen.width,
+                    (h / 100f) * Screen.height,
+                    1f)
+            );
+
+            var forward = screenToWorldPoint - arSessionOrigin.camera.transform.position;
             forward.y = 0;
             forward = forward.normalized;
             var c = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
             c.localScale = Vector3.one * 0.2f;
-            c.position = screenToWorldPoint + forward;
+            c.SetPositionAndRotation(screenToWorldPoint, UnityEngine.Random.rotation);
             var rigid = c.gameObject.AddComponent<Rigidbody>();
-            rigid.mass = 0.2f;
-            rigid.velocity = forward + Vector3.up;
+            rigid.velocity = forward * 2 + Vector3.up;
 
             await UniTask.Delay(TimeSpan.FromSeconds(10));
 

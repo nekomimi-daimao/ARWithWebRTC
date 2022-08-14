@@ -114,8 +114,19 @@ namespace Scene
 
         private void OnTap(PointerEventData data)
         {
-            var point = receiveImage.rectTransform.InverseTransformPoint(data.position);
-            _shareTapPoint.SendMessage(ShareTapPoint.MessageType.TapPoint, (short)point.x, (short)point.y);
+            var receiveImageRectTransform = receiveImage.rectTransform;
+            var point = receiveImageRectTransform.InverseTransformPoint(data.position);
+            var size = receiveImageRectTransform.sizeDelta;
+            var pointX = (point.x + size.x / 2) / size.x;
+            var pointY = (point.y + size.y / 2) / size.y;
+            pointX *= 100;
+            pointY *= 100;
+
+            _shareTapPoint.SendMessage(
+                ShareTapPoint.MessageType.TapPoint,
+                (short)pointX,
+                (short)pointY
+            );
         }
 
         private void OnReceiveScreenSize((short, short) msg)
@@ -123,7 +134,6 @@ namespace Scene
             var (w, h) = msg;
             var sizeDelta = receiveImage.rectTransform.sizeDelta;
             var ratio = (float)h / w;
-            Debug.Log(ratio);
             var fixedH = sizeDelta.x * ratio;
             if (Mathf.Approximately(sizeDelta.y, fixedH))
             {
