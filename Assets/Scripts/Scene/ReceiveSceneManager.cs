@@ -30,6 +30,8 @@ namespace Scene
 
         #region UI
 
+        private const string KeyAddress = nameof(KeyAddress);
+
         [SerializeField]
         private InputField inputAddress;
 
@@ -49,8 +51,9 @@ namespace Scene
             inputAddress.OnValueChangedAsObservable()
                 .Subscribe(s => buttonConnect.interactable = !string.IsNullOrEmpty(s))
                 .AddTo(_compositeDisposable);
+            inputAddress.text = PlayerPrefs.GetString(KeyAddress);
 
-            buttonConnect.interactable = false;
+            buttonConnect.interactable = !string.IsNullOrEmpty(inputAddress.text);
 
             buttonConnect.OnClickAsObservable()
                 .Subscribe(TryConnect)
@@ -62,7 +65,11 @@ namespace Scene
                 {
                     await UniTask.SwitchToMainThread();
                     buttonConnect.interactable = false;
-                    var url = inputAddress.text;
+                    var url = inputAddress.text.Trim();
+
+                    PlayerPrefs.SetString(KeyAddress, url);
+                    PlayerPrefs.Save();
+
                     await CreatePeerAsync(url);
                 }
                 finally
