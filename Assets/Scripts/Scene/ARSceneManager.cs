@@ -107,6 +107,9 @@ namespace Scene
 
         private ShareTapPoint _shareTapPoint;
 
+        [SerializeField]
+        private Rigidbody throwCubePrefab;
+
         private void ChannelCreated(RTCDataChannel channel)
         {
             _shareTapPoint = new ShareTapPoint(channel);
@@ -142,15 +145,11 @@ namespace Scene
             var forward = screenToWorldPoint - arSessionOrigin.camera.transform.position;
             forward.y = 0;
             forward = forward.normalized;
-            var c = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
-            c.localScale = Vector3.one * 0.2f;
-            c.SetPositionAndRotation(screenToWorldPoint, UnityEngine.Random.rotation);
-            var rigid = c.gameObject.AddComponent<Rigidbody>();
-            rigid.velocity = forward * 2 + Vector3.up;
-
-            await UniTask.Delay(TimeSpan.FromSeconds(10));
-
-            Destroy(c.gameObject);
+            var throwCube = GameObject.Instantiate(throwCubePrefab);
+            throwCube.position = screenToWorldPoint;
+            throwCube.rotation = UnityEngine.Random.rotation;
+            throwCube.velocity = forward * 2 + Vector3.up;
+            Destroy(throwCube.gameObject, 6f);
         }
 
         #endregion
