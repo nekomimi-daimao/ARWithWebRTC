@@ -173,12 +173,6 @@ namespace Scene
         [SerializeField]
         private ARCameraBackground arCameraBackground;
 
-        [SerializeField]
-        private Camera renderingCamera;
-
-        [SerializeField]
-        private RawImage renderingBackground;
-
         private async UniTask Init(CancellationToken token)
         {
             var prepare = await Preparator.Check();
@@ -211,13 +205,15 @@ namespace Scene
                 return;
             }
 
-            var cs = renderingCamera.CaptureStream(Screen.width, Screen.height, 1000000);
+            var cs = arSessionOrigin.camera.CaptureStream(Screen.width, Screen.height, 1000000);
             _peer = new PeerController(
                 true,
                 _signaler,
                 new[] { cs, },
                 new[] { ShareTapPoint.ChannelName }
             );
+            var targetTexture = arSessionOrigin.camera.targetTexture;
+            arSessionOrigin.camera.targetTexture = null;
 
             _peer.DataChannels
                 .ObserveAdd()
@@ -226,28 +222,15 @@ namespace Scene
                 .Subscribe(ChannelCreated)
                 .AddTo(_compositeDisposable);
 
-            var renderingTexture = new RenderTexture(renderingCamera.targetTexture);
-            renderingBackground.texture = renderingTexture;
-            Observable.FromEvent<ARCameraFrameEventArgs>(
-                h => arCameraManager.frameReceived += h,
-                h => arCameraManager.frameReceived -= h
-            ).Subscribe(args =>
-            {
-                foreach (var argsTexture in args.textures)
-                {
-#if UNITY_ANDROID
-                    Graphics.Blit(argsTexture, renderingTexture, arCameraBackground.material);
-#elif UNITY_IOS
-                    Graphics.Blit(argsTexture, renderingTexture);
-#endif
-                }
-            }).AddTo(_compositeDisposable);
+            Observable.EveryUpdate()
+                .Subscribe(_ => Graphics.Blit(null, targetTexture))
+                .AddTo(_compositeDisposable);
 
             this.OnDestroyAsObservable()
                 .Subscribe(_ =>
                 {
                     Disconnect();
-                    renderingTexture.Release();
+                    targetTexture.Release();
                 });
         }
 
